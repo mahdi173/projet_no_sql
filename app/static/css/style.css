@@ -163,6 +163,12 @@ button {
   border-color: var(--accent-primary);
 }
 
+/* Fix for Select Options being white on white in some browsers */
+select option {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
 .btn-primary {
   background: linear-gradient(90deg, var(--accent-primary), #4a90e2);
   color: white;

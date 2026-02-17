@@ -18,6 +18,13 @@
         </div>
 
         <div class="db-control">
+          <button
+            id="seed-btn"
+            class="btn-secondary"
+            style="margin-right: 1rem; padding: 0.3rem 0.8rem; font-size: 0.8rem"
+          >
+            🌱 Seed Data
+          </button>
           <span class="status-badge"></span>
           <span style="color: var(--text-secondary); font-size: 0.9rem"
             >Active DB:</span
@@ -322,6 +329,31 @@
         switchDB(e.target.value);
       });
 
+      // Seed Data
+      document
+        .getElementById("seed-btn")
+        .addEventListener("click", async () => {
+          const btn = document.getElementById("seed-btn");
+          const originalText = btn.innerText;
+          btn.innerText = "Seeding...";
+          btn.disabled = true;
+
+          try {
+            const res = await fetch("/ui/seed_db", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+              alert(data.message);
+            } else {
+              alert("Error: " + (data.error || "Unknown"));
+            }
+          } catch (e) {
+            alert("Request failed");
+          } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+          }
+        });
+
       // --- Tabs ---
       function showTab(tabId) {
         document
@@ -347,6 +379,17 @@
             method: "POST",
             body: fd,
           });
+
+          if (!res.ok) {
+            let msg = "Failed to generate plot.";
+            try {
+                const err = await res.json();
+                msg = err.error || msg;
+            } catch(e) {}
+            alert(msg);
+            return;
+          }
+
           const blob = await res.blob();
 
           const img = document.getElementById("viz-result");
@@ -359,6 +402,17 @@
         .getElementById("corr-btn")
         .addEventListener("click", async () => {
           const res = await fetch("/ui/correlation", { method: "POST" });
+
+          if (!res.ok) {
+            let msg = "Failed to generate correlation.";
+            try {
+                const err = await res.json();
+                msg = err.error || msg;
+            } catch(e) {}
+            alert(msg);
+            return;
+          }
+
           const blob = await res.blob();
 
           const img = document.getElementById("viz-result");

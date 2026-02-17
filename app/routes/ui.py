@@ -46,18 +46,16 @@ def current_db_status():
 
 def _load_df_from_current_db():
     db = get_database()
-    # All DB implementations should support find({}) -> list of dicts
-    # However, structure might vary slightly (e.g. Cassandra objects vs dicts)
-    
     raw_data = db.find({})
     
-    # helper to normalize dicts
+    if not raw_data:
+        return pd.DataFrame()
+
     docs = []
     for d in raw_data:
-        # If it's a Cassandra Row object, convert to dict
-        if not isinstance(d, dict):
-             # assuming it has _fields or __dict__ or we map manually
-            docs.append({
+        # Cassandra Row handling
+        if hasattr(d, '_fields'): # Check for namedtuple or Row-like object
+             docs.append({
                 "species": getattr(d, "species", None),
                 "island": getattr(d, "island", None),
                 "sex": getattr(d, "sex", None),
@@ -66,16 +64,42 @@ def _load_df_from_current_db():
                 "features.flipper_length_mm": getattr(d, "flipper_length_mm", None),
                 "features.body_mass_g": getattr(d, "body_mass_g", None),
             })
-        else:
+        elif isinstance(d, dict):
              docs.append(d)
 
     df = pd.json_normalize(docs)
-    
-    # Rename features.x -> x if needed for consistency, or keep as is?
-    # The training script expects 'features.bill_length_mm' etc.
-    # But for visualization we might want short names.
-    # Let's keep them as is and handle in visualization.
     return df
+
+@ui_bp.route("/seed_db", methods=["POST"])
+def seed_db():
+    try:
+        db = get_database()
+        # Check if already has data
+        if db.find({}):
+             return jsonify({"status": "skipped", "message": "Database already has data"})
+             
+        # Load from CSV
+        df = pd.read_csv("/app/penguins_size.csv")
+        count = 0
+        for _, row in df.iterrows():
+            # Construct dict matching our schema
+            doc = {
+                "species": row["species"],
+                "island": row["island"],
+                "sex": row["sex"] if pd.notna(row["sex"]) else None,
+                "features": {
+                    "bill_length_mm": row["bill_length_mm"] if pd.notna(row["bill_length_mm"]) else None,
+                    "bill_depth_mm": row["bill_depth_mm"] if pd.notna(row["bill_depth_mm"]) else None,
+                    "flipper_length_mm": int(row["flipper_length_mm"]) if pd.notna(row["flipper_length_mm"]) else None,
+                    "body_mass_g": int(row["body_mass_g"]) if pd.notna(row["body_mass_g"]) else None,
+                }
+            }
+            db.insert(doc)
+            count += 1
+            
+        return jsonify({"status": "success", "message": f"Seeded {count} records"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ------------------------------------------------------------------------------
 # Visualization
@@ -96,7 +120,7 @@ def plot_distribution():
     
     df = _load_df_from_current_db()
     if df.empty:
-        return send_file(io.BytesIO(), mimetype="image/png") # Return empty image
+        return jsonify({"error": "No data available in current database"}), 400
 
     buf = io.BytesIO()
     plt.figure(figsize=(6, 4))
@@ -120,9 +144,22 @@ def plot_distribution():
 def correlation():
     df = _load_df_from_current_db()
     
-    # Filter for numeric columns
-    numeric_cols = [c for c in df.columns if "features." in c or "mm" in c or "g" in c]
-    numeric_df = df[numeric_cols].dropna()
+    if df.empty:
+         return jsonify({"error": "No data available in current database"}), 400
+
+    # Filter for numeric columns explicitly
+    # Drop columns that are definitely not features or features that are not numeric
+    # We can use select_dtypes to be safe
+    import numpy as np
+    numeric_df = df.select_dtypes(include=[np.number])
+    
+    # Optional: explicitly drop known non-feature numerics if any, or keep them.
+    # The original logic tried to keep specific feature names. 
+    # Let's try to intersect with known potential feature names to avoid random numeric noise if any,
+    # but select_dtypes is usually safer for .corr()
+    
+    if numeric_df.empty or numeric_df.shape[1] < 2:
+         return jsonify({"error": "Not enough numeric data for correlation"}), 400
     
     buf = io.BytesIO()
     plt.figure(figsize=(6, 5))
@@ -130,11 +167,12 @@ def correlation():
     if not numeric_df.empty:
         sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm")
         plt.title("Correlation matrix")
+        plt.tight_layout()
+        plt.savefig(buf, format="png")
     else:
-        plt.text(0.5, 0.5, "No numeric data found", ha='center')
+        plt.close()
+        return jsonify({"error": "Not enough data for correlation"}), 400
         
-    plt.tight_layout()
-    plt.savefig(buf, format="png")
     plt.close()
     buf.seek(0)
     return send_file(buf, mimetype="image/png")
