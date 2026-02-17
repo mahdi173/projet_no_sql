@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Penguin Analytics AI</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <!-- Header -->
+      <header>
+        <div class="brand">
+          <h1>Penguin Analytics AI</h1>
+          <small style="color: var(--text-secondary)"
+            >Advanced NoSQL & ML Platform</small
+          >
+        </div>
+
+        <div class="db-control">
+          <span class="status-badge"></span>
+          <span style="color: var(--text-secondary); font-size: 0.9rem"
+            >Active DB:</span
+          >
+          <select
+            id="db-selector"
+            class="form-control"
+            style="
+              width: auto;
+              margin-bottom: 0;
+              padding: 0.4rem 2rem 0.4rem 0.8rem;
+              background-position: right 0.5rem center;
+            "
+          >
+            <option value="mongo">MongoDB</option>
+            <option value="cassandra">Cassandra</option>
+            <option value="redis">Redis</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('visualize')">
+          Visualize
+        </button>
+        <button class="tab-btn" onclick="showTab('predict')">Predict</button>
+        <button class="tab-btn" onclick="showTab('evaluate')">Evaluate</button>
+      </div>
+
+      <!-- VISUALIZE SECTION -->
+      <div id="visualize" class="content-section active">
+        <div class="card">
+          <h2>Data Exploration</h2>
+          <div class="grid-2">
+            <div>
+              <form id="viz-form">
+                <label>Variable</label>
+                <select name="variable" class="form-control">
+                  <option value="features.bill_length_mm">
+                    Bill Length (mm)
+                  </option>
+                  <option value="features.bill_depth_mm">
+                    Bill Depth (mm)
+                  </option>
+                  <option value="features.flipper_length_mm">
+                    Flipper Length (mm)
+                  </option>
+                  <option value="features.body_mass_g">Body Mass (g)</option>
+                  <option value="island">Island</option>
+                  <option value="sex">Sex</option>
+                  <option value="species">Species</option>
+                </select>
+
+                <label>Plot Type</label>
+                <select name="plot_type" class="form-control">
+                  <option value="hist">Histogram</option>
+                  <option value="boxplot">Boxplot</option>
+                </select>
+
+                <button type="submit" class="btn-primary">Generate Plot</button>
+              </form>
+
+              <div style="margin-top: 2rem">
+                <button id="corr-btn" class="btn-secondary">
+                  Show Correlation Matrix
+                </button>
+              </div>
+            </div>
+
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 300px;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 8px;
+              "
+            >
+              <img
+                id="viz-result"
+                style="display: none; max-width: 100%; padding: 10px"
+              />
+              <span id="viz-placeholder" style="color: var(--text-secondary)"
+                >Select options and click Generate</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PREDICT SECTION -->
+      <div id="predict" class="content-section">
+        <div class="card">
+          <h2>Species Prediction</h2>
+          <div class="grid-2">
+            <form id="predict-form">
+              <div class="grid-2">
+                <div>
+                  <label>Island</label>
+                  <select name="island" class="form-control">
+                    <option value="Torgersen">Torgersen</option>
+                    <option value="Biscoe">Biscoe</option>
+                    <option value="Dream">Dream</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Sex</label>
+                  <select name="sex" class="form-control">
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div>
+                  <label>Bill Length (mm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="bill_length_mm"
+                    class="form-control"
+                    required
+                    value="45.0"
+                  />
+                </div>
+                <div>
+                  <label>Bill Depth (mm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="bill_depth_mm"
+                    class="form-control"
+                    required
+                    value="15.0"
+                  />
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div>
+                  <label>Flipper Length (mm)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    name="flipper_length_mm"
+                    class="form-control"
+                    required
+                    value="200"
+                  />
+                </div>
+                <div>
+                  <label>Body Mass (g)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    name="body_mass_g"
+                    class="form-control"
+                    required
+                    value="4000"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" style="width: 100%">
+                Predict Species
+              </button>
+            </form>
+
+            <div id="predict-result" style="display: none">
+              <div
+                style="
+                  background: rgba(88, 166, 255, 0.1);
+                  border: 1px solid var(--accent-primary);
+                  border-radius: 8px;
+                  padding: 2rem;
+                  text-align: center;
+                "
+              >
+                <h3 style="color: var(--accent-primary); margin: 0 0 1rem 0">
+                  Prediction Result
+                </h3>
+                <div
+                  style="
+                    font-size: 2.5rem;
+                    font-weight: bold;
+                    margin-bottom: 1.5rem;
+                  "
+                  id="pred-species"
+                >
+                  ...
+                </div>
+
+                <div style="text-align: left">
+                  <label>Confidence Scores</label>
+                  <div id="pred-probs"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVALUATE SECTION -->
+      <div id="evaluate" class="content-section">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: start;
+            "
+          >
+            <h2>Model Evaluation</h2>
+            <button id="eval-btn" class="btn-primary">
+              Run Full Evaluation
+            </button>
+          </div>
+          <p style="color: var(--text-secondary)">
+            Trains a new model on the currently active database (<span
+              id="eval-db-name"
+              >...</span
+            >) and validates it on a test set.
+          </p>
+
+          <div
+            id="eval-loader"
+            style="display: none; padding: 2rem; text-align: center"
+          >
+            <div class="loader"></div>
+            <span style="margin-left: 10px">Training & Evaluating...</span>
+          </div>
+
+          <div id="eval-results" style="display: none; margin-top: 2rem">
+            <div class="grid-2">
+              <div>
+                <h3>Metrics</h3>
+                <div style="font-size: 1.2rem; margin-bottom: 1rem">
+                  Overall Accuracy:
+                  <span
+                    id="eval-acc"
+                    style="color: var(--accent-success); font-weight: bold"
+                  ></span>
+                </div>
+                <div class="table-container">
+                  <table id="eval-table">
+                    <thead>
+                      <tr>
+                        <th>Class</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <h3>Confusion Matrix</h3>
+                <img id="eval-cm" class="result-img" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        &copy; 2026 Penguin Analytics. Powered by Flask, MongoDB, Cassandra &
+        Redis.
+      </footer>
+    </div>
+
+    <script>
+      // --- State Management ---
+      async function fetchCurrentDB() {
+        const res = await fetch("/ui/current_db");
+        const data = await res.json();
+        const selector = document.getElementById("db-selector");
+        selector.value = data.current_db;
+        document.getElementById("eval-db-name").innerText =
+          data.current_db.toUpperCase();
+      }
+
+      async function switchDB(type) {
+        const res = await fetch(`/ui/set_db/${type}`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Switched to", data.current_db);
+          document.getElementById("eval-db-name").innerText =
+            data.current_db.toUpperCase();
+          // Optional: Show toast
+        } else {
+          alert("Failed to switch DB. Check console/logs.");
+        }
+      }
+
+      document.getElementById("db-selector").addEventListener("change", (e) => {
+        switchDB(e.target.value);
+      });
+
+      // --- Tabs ---
+      function showTab(tabId) {
+        document
+          .querySelectorAll(".content-section")
+          .forEach((el) => el.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((el) => el.classList.remove("active"));
+
+        document.getElementById(tabId).classList.add("active");
+        document
+          .querySelector(`button[onclick="showTab('${tabId}')"]`)
+          .classList.add("active");
+      }
+
+      // --- Visualize Logic ---
+      document
+        .getElementById("viz-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          const res = await fetch("/ui/plot_distribution", {
+            method: "POST",
+            body: fd,
+          });
+          const blob = await res.blob();
+
+          const img = document.getElementById("viz-result");
+          img.src = URL.createObjectURL(blob);
+          img.style.display = "block";
+          document.getElementById("viz-placeholder").style.display = "none";
+        });
+
+      document
+        .getElementById("corr-btn")
+        .addEventListener("click", async () => {
+          const res = await fetch("/ui/correlation", { method: "POST" });
+          const blob = await res.blob();
+
+          const img = document.getElementById("viz-result");
+          img.src = URL.createObjectURL(blob);
+          img.style.display = "block";
+          document.getElementById("viz-placeholder").style.display = "none";
+        });
+
+      // --- Predict Logic ---
+      document
+        .getElementById("predict-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          const jsonBody = {};
+          fd.forEach((value, key) => (jsonBody[key] = value));
+
+          const res = await fetch("/ui/predict_json", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(jsonBody),
+          });
+          const data = await res.json();
+
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+
+          document.getElementById("predict-result").style.display = "block";
+          document.getElementById("pred-species").innerText =
+            data.predicted_species;
+
+          // Format probabilities
+          let html = '<ul style="list-style: none; padding: 0;">';
+          for (const [cls, prob] of Object.entries(data.probabilities)) {
+            const percent = (prob * 100).toFixed(1);
+            // Simple bar
+            html += `
+                    <li style="margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                            <span>${cls}</span>
+                            <span>${percent}%</span>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                            <div style="background: var(--accent-primary); width: ${percent}%; height: 100%;"></div>
+                        </div>
+                    </li>`;
+          }
+          html += "</ul>";
+          document.getElementById("pred-probs").innerHTML = html;
+        });
+
+      // --- Evaluate Logic ---
+      document
+        .getElementById("eval-btn")
+        .addEventListener("click", async () => {
+          document.getElementById("eval-loader").style.display = "block";
+          document.getElementById("eval-results").style.display = "none";
+
+          const res = await fetch("/ui/run_evaluation", { method: "POST" });
+          const data = await res.json();
+
+          document.getElementById("eval-loader").style.display = "none";
+
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+
+          document.getElementById("eval-results").style.display = "block";
+          document.getElementById("eval-acc").innerText =
+            (data.accuracy * 100).toFixed(2) + "%";
+          document.getElementById("eval-cm").src =
+            "data:image/png;base64," + data.cm_image;
+
+          // Populate table
+          const tbody = document.querySelector("#eval-table tbody");
+          tbody.innerHTML = "";
+          for (const [cls, metrics] of Object.entries(data.report)) {
+            if (["accuracy", "macro avg", "weighted avg"].includes(cls))
+              continue;
+            const row = `
+                    <tr>
+                        <td style="font-weight: bold;">${cls}</td>
+                        <td class="metric-value">${metrics.precision.toFixed(3)}</td>
+                        <td class="metric-value">${metrics.recall.toFixed(3)}</td>
+                        <td class="metric-value">${metrics["f1-score"].toFixed(3)}</td>
+                    </tr>
+                 `;
+            tbody.insertAdjacentHTML("beforeend", row);
+          }
+        });
+
+      // Init
+      fetchCurrentDB();
+    </script>
+  </body>
+</html>

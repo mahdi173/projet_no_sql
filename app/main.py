@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from db.get_db import get_database
 from routes.regression import reg
 from routes.predict_route import predict_bp
@@ -22,7 +22,7 @@ def find_all():
 
 @app.route("/")
 def home():
-    return f"Currently using: {type(db).__name__}"
+    return render_template("dashboard.html")
 
 
 app.register_blueprint(reg, url_prefix="/regression")
