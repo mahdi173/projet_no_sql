@@ -1,0 +1,9 @@
+flask
+pymongo
+cassandra-driver
+pandas
+matplotlib
+seaborn
+statsmodels
+scikit-learn
+joblib

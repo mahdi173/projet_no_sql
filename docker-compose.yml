@@ -1,0 +1,48 @@
+services:
+  app:
+    build: ./app
+    volumes:
+      - ./app:/app
+    container_name: app
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_started
+      cassandra: 
+        condition: service_healthy
+
+    environment:
+      DATABASE_TYPE: mongo  # cassandra/mongo
+      MONGO_URI: mongodb://mongodb:27017
+      CASSANDRA_HOST: cassandra
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  cassandra:
+    image: cassandra:5
+    container_name: cassandra
+    restart: always
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    environment:
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+
+volumes:
+  mongo_data:
+  cassandra_data:
