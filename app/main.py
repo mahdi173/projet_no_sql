@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from db.get_db import get_database
 from routes.regression import reg
 from routes.predict_route import predict_bp
+from routes.ui import ui_bp
 
 db = get_database()
 db.connect()
@@ -26,6 +27,7 @@ def home():
 
 app.register_blueprint(reg, url_prefix="/regression")
 app.register_blueprint(predict_bp)
+app.register_blueprint(ui_bp, url_prefix="/ui")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
