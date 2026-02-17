@@ -53,6 +53,7 @@
         </button>
         <button class="tab-btn" onclick="showTab('predict')">Predict</button>
         <button class="tab-btn" onclick="showTab('evaluate')">Evaluate</button>
+        <button class="tab-btn" onclick="showTab('benchmark')">Benchmark</button>
       </div>
 
       <!-- VISUALIZE SECTION -->
@@ -295,6 +296,60 @@
         </div>
       </div>
 
+      <!-- BENCHMARK SECTION -->
+      <div id="benchmark" class="content-section">
+        <div class="card">
+            <h2>Database Performance Benchmark</h2>
+            <p style="color: var(--text-secondary);">
+                Measures ingestion speed (Write) and retrieval latency (Read) on the active database.
+            </p>
+
+            <div class="grid-2">
+                <div>
+                    <div style="margin-bottom: 2rem;">
+                        <label>Target Database Memory Usage</label>
+                        <div id="mem-usage" style="font-size: 1.5rem; font-weight: bold; color: var(--accent-secondary);">Checking...</div>
+                        <button id="refresh-mem-btn" class="btn-secondary" style="margin-top: 0.5rem; font-size: 0.8rem;">Refresh Stats</button>
+                    </div>
+
+                    <form id="bench-form" style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px;">
+                        <label>Benchmark Scenario</label>
+                        <select name="count" class="form-control">
+                            <option value="100">100 Records (Quick)</option>
+                            <option value="1000">1,000 Records</option>
+                            <option value="5000">5,000 Records (Stress Test)</option>
+                        </select>
+                        <button type="submit" class="btn-primary" style="width: 100%;">🚀 Run Benchmark</button>
+                    </form>
+                </div>
+
+                <div>
+                    <div id="bench-loader" style="display: none; text-align: center; padding: 3rem;">
+                         <div class="loader"></div>
+                         <p style="margin-top: 1rem;">Running Write/Read Operations...</p>
+                    </div>
+
+                    <div id="bench-results" style="display: none;">
+                        <h3>Results</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Time / Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bench-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
       <footer>
         &copy; 2026 Penguin Analytics. Powered by Flask, MongoDB, Cassandra &
         Redis.
@@ -507,8 +562,76 @@
           }
         });
 
+      // --- Benchmark Logic ---
+      async function fetchMemStats() {
+          const el = document.getElementById("mem-usage");
+          el.innerText = "Loading...";
+          try {
+              const res = await fetch("/benchmark/memory_stats");
+              const data = await res.json();
+              el.innerText = data.memory || data.error || "N/A";
+          } catch(e) {
+              el.innerText = "Error";
+          }
+      }
+      
+      document.getElementById("refresh-mem-btn").addEventListener("click", fetchMemStats);
+
+      document.getElementById("bench-form").addEventListener("submit", async(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.target);
+          const count = fd.get("count");
+          
+          document.getElementById("bench-loader").style.display = "block";
+          document.getElementById("bench-results").style.display = "none";
+          
+          try {
+              const res = await fetch("/benchmark/run_benchmark", {
+                  method: "POST",
+                  headers: {"Content-Type": "application/json"},
+                  body: JSON.stringify({count: count})
+              });
+              
+              const data = await res.json();
+              document.getElementById("bench-loader").style.display = "none";
+              
+              if(data.error) {
+                  alert(data.error);
+                  return;
+              }
+              
+              document.getElementById("bench-results").style.display = "block";
+              const tbody = document.getElementById("bench-table-body");
+              tbody.innerHTML = `
+                <tr>
+                    <td><strong>Db Write Time</strong> (${data.count} inserts)</td>
+                    <td>${data.write_time} s</td>
+                </tr>
+                 <tr>
+                    <td><strong>Throughput (Write)</strong></td>
+                    <td>${data.throughput_write} ops/sec</td>
+                </tr>
+                <tr>
+                    <td><strong>Db Read Time</strong> (FetchAll)</td>
+                    <td>${data.read_time} s</td>
+                </tr>
+                <tr>
+                    <td><strong>Throughput (Read)</strong></td>
+                    <td>${data.throughput_read} ops/sec</td>
+                </tr>
+              `;
+              
+              fetchMemStats(); // refresh memory after
+              
+          } catch(e) {
+              document.getElementById("bench-loader").style.display = "none";
+              alert("Benchmark failed: " + e);
+          }
+      });
+
       // Init
       fetchCurrentDB();
+      fetchMemStats();
     </script>
   </body>
 </html>
