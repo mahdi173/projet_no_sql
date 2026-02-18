@@ -6,7 +6,8 @@ services:
     container_name: app_prod
     restart: always
     ports:
-      - "5000:5000"
+      # Application is now internal, accessible only via Nginx
+      - "5622"
     depends_on:
       mongodb:
         condition: service_started
@@ -19,6 +20,15 @@ services:
     environment:
       - FLASK_ENV=production
     # Volumes are removed in prod to prevent accidental code changes from host
+
+  nginx:
+    build: ./nginx
+    container_name: nginx_prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - app
     # and to ensure the container is immutable.
 
   mongodb:
