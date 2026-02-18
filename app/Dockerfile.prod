@@ -1,13 +1,29 @@
-FROM python:3.9-slim
+# app/Dockerfile.prod
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-# Install dependencies first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Packages utiles pour build/diag (adjuste au besoin)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the rest of the application code
+# Copier et installer dépendances
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Copier le code
 COPY . .
 
-# Use Gunicorn as the entry point
+# Exécuter en utilisateur non-root
+RUN useradd -ms /bin/bash appuser && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 5000
+
+# Démarrage via Gunicorn et config dédiée
 CMD ["gunicorn", "-c", "gunicorn_config.py", "main:app"]
