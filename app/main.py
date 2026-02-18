@@ -1,4 +1,10 @@
 from flask import Flask, request, jsonify, render_template
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from db.get_db import get_database
 from routes.regression import reg
 from routes.predict_route import predict_bp

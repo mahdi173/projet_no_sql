@@ -8,3 +8,5 @@ statsmodels
 scikit-learn
 joblib
 redis
+gunicorn
+python-dotenv

@@ -10,7 +10,6 @@ __pycache__/
 
 # Virtual environments
 venv/
-.env/
 env/
 .venv/
 
@@ -28,7 +27,6 @@ instance/
 
 # Environment variables
 *.env
-*.env.*
 .envrc
 
 # Flask cache
@@ -53,7 +51,6 @@ docker-data/
 
 # Compose override files
 docker-compose.override.yml
-docker-compose.*.yml
 
 # ---------------------------------------
 # Logs, temp, runtime

@@ -1,0 +1,57 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.prod
+    container_name: app_prod
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      mongodb:
+        condition: service_started
+      cassandra:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=production
+    # Volumes are removed in prod to prevent accidental code changes from host
+    # and to ensure the container is immutable.
+
+  mongodb:
+    image: mongo:6
+    container_name: mongodb_prod
+    restart: always
+    volumes:
+      - mongo_data_prod:/data/db
+    # Port 27017 not exposed to host for security, only accessible via app container
+
+  cassandra:
+    image: cassandra:5
+    container_name: cassandra_prod
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - cassandra_data_prod:/var/lib/cassandra
+    environment:
+      - MAX_HEAP_SIZE=1G
+      - HEAP_NEWSIZE=200M
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_prod
+    restart: always
+    volumes:
+      - redis_data_prod:/data
+
+volumes:
+  mongo_data_prod:
+  cassandra_data_prod:
+  redis_data_prod:
